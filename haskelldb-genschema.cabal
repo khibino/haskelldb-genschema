@@ -1,0 +1,22 @@
+
+name:                haskelldb-genschema
+version:             0.1.0.0
+synopsis:            Tools to generate DB schema for HaskellDB
+-- description:         
+homepage:            http://twitter.com/khibino
+license:             BSD3
+license-file:        LICENSE
+author:              Kei Hibino
+maintainer:          ex8k.hibino@gmail.com
+-- copyright:           
+category:            Database
+build-type:          Simple
+cabal-version:       >=1.8
+
+library
+  exposed-modules:     Database.HaskellDB.SchemaGen
+  -- other-modules:       
+  build-depends:         base <5
+                       , haskelldb
+                       , template-haskell
+  hs-source-dirs:      src

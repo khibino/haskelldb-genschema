@@ -1,0 +1,11 @@
+#!/usr/bin/make -f
+
+DEB_CABAL_PACKAGE = haskelldb-genschema
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/hlibrary.mk
+
+
+# How to install an extra file into the documentation package
+#binary-fixup/libghc-haskelldb-genschema-doc::
+#	echo "Some informative text" > debian/libghc-haskelldb-genschema-doc/usr/share/doc/libghc-haskelldb-genschema-doc/AnExtraDocFile
