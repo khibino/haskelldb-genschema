@@ -237,7 +237,7 @@ defineRecordDefault tableType name fields =
                fields
 
 nameChars :: String
-nameChars =  ['0' .. '9'] ++ ['A' .. 'B'] ++  ['a' .. 'z']
+nameChars =  ['0' .. '9'] ++ ['A' .. 'Z'] ++  ['a' .. 'z']
 
 splitForName :: String -> [String]
 splitForName str
