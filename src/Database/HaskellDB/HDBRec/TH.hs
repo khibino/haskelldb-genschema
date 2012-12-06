@@ -184,7 +184,7 @@ defineTableDefault schema name fields =
     relExpr = varCamelcaseName name
     relType = conCamelcaseName name
     resultType = conCamelcaseName $ name ++ "_result"
-    sqlName = schema ++ '.' : name
+    sqlName = map toUpper schema ++ '.' : map toLower name
     fldsInfo = map
                (\ (n, t) -> ((varCamelcaseName n, n), (conCamelcaseName n, t)))
                fields
