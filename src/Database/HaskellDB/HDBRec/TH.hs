@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Database.HaskellDB.SchemaGen (
+module Database.HaskellDB.HDBRec.TH (
   ConName, VarName,
 
   defineFieldType,
@@ -197,7 +197,7 @@ defineRecordInstance tableType (ConName typeName) fields =
           return $(recConE typeName (recFields [| vfs |] [| stmt |] fields))
   |]
   where
-    fieldQ vfsE stmtE (VarName n, f) = 
+    fieldQ vfsE stmtE (VarName n, f) =
       (,) n `fmap`
       [| getValue $vfsE $stmtE $(litE . stringL $ f) |]
     recFields vfsE stmtE = map (fieldQ vfsE stmtE)
@@ -242,7 +242,7 @@ camelcaseUpper =  concat . map capitalize . splitForName
 -- camelcaseLower =  unCapitalize . camelcaseUpper
 
 conCamelcaseName :: String -> ConName
-conCamelcaseName =  conName . camelcaseUpper 
+conCamelcaseName =  conName . camelcaseUpper
 
 varCamelcaseName :: String -> VarName
 varCamelcaseName =  varName . camelcaseUpper
