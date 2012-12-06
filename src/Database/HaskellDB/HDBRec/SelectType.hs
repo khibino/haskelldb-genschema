@@ -1,10 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
 
 module Database.HaskellDB.HDBRec.SelectType (
-  RelationSelect, RecordSelect
+  RelationSelect, ResultSelect
   ) where
 
 import Database.HaskellDB (Select, Attr, Expr)
 
-type RelationSelect tbl val rel = Select (Attr tbl val) rel (Expr val)
-type RecordSelect tbl val rel = Select (Attr tbl val) rel val
+type RelationSelect fld val rel = Select (Attr fld val) rel (Expr val)
+type ResultSelect fld val rel = Select (Attr fld val) rel val

@@ -11,6 +11,7 @@ module Database.HaskellDB.HDBRec.TH (
   defineField,
 
   defineRelationType,
+  defineResultType,
   defineRelationExpr,
   defineRelation,
 
@@ -120,6 +121,12 @@ defineRelationType (ConName typeName) fields = do
   -- Create the type synonmym representing for our table.
   tySynD typeName [] $ mkRelationType fields
 
+defineResultType :: ConName
+                 -> [(ConName, TH.TypeQ)]
+                 -> TH.DecQ
+defineResultType (ConName typeName) fields =
+  tySynD typeName [] $ mkResultType fields
+
 tableColumns :: [ConName] -> TH.ExpQ
 tableColumns []             = TH.runIO . ioError . userError
                               $ "tlbCols: zero length list of name is not allowed."
@@ -156,23 +163,27 @@ defineTable :: VarName
             -> ConName
             -> String
             -> [((VarName, String), (ConName, TH.TypeQ))]
+            -> ConName
             -> Q [Dec]
-defineTable relExprName relTypeName sqlName fields = do
-  rel  <- defineRelation relExprName relTypeName sqlName (map snd fields)
+defineTable relExprName relTypeName sqlName fields resultTypeName = do
+  let types = map snd fields
+  rel    <- defineRelation relExprName relTypeName sqlName types
+  result <- defineResultType resultTypeName types
   let defF :: ((VarName, String), (ConName, TH.TypeQ)) -> Q [Dec]
       defF ((var, name), (con, typ)) = defineField con var name typ
   flds <- fmap concat . mapM defF $ fields
-  return $ rel ++ flds
+  return $ rel ++ result : flds
 
 defineTableDefault :: String               -- ^ schema name string of table in SQL
                    -> String               -- ^ table name string in SQL
                    -> [(String, TH.TypeQ)] -- ^ field name string in SQL and field types
                    -> Q [Dec]
 defineTableDefault schema name fields =
-  defineTable relExpr relType sqlName fldsInfo
+  defineTable relExpr relType sqlName fldsInfo resultType
   where
     relExpr = varCamelcaseName name
     relType = conCamelcaseName name
+    resultType = conCamelcaseName $ name ++ "_result"
     sqlName = schema ++ '.' : name
     fldsInfo = map
                (\ (n, t) -> ((varCamelcaseName n, n), (conCamelcaseName n, t)))
