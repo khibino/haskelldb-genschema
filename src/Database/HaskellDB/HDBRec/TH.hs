@@ -12,22 +12,22 @@ module Database.HaskellDB.HDBRec.TH (
   defineFieldDefault,
 
   defineRelationType,
-  defineResultType,
+  defineRecordType,
   defineRelationExpr,
   defineRelation,
 
   defineTable,
   defineTableDefault,
 
-  defineRecordType,
-  defineRecordInstance,
-  defineRecord,
-  defineRecordDefault
+  defineHaskellRecordType,
+  defineHaskellRecordInstance,
+  defineHaskellRecord,
+  defineHaskellRecordDefault
 
   ) where
 
 import Data.Char (toUpper, toLower)
-import Database.HaskellDB (Attr, Expr)
+import Database.HaskellDB (Attr, Expr, Rel, Record)
 import Database.HaskellDB.HDBRec (RecCons, RecNil, FieldTag(fieldName), (#))
 import Database.HaskellDB.Database (GetRec(getRec), getValue)
 import Database.HaskellDB.DBLayout (Table, mkAttr, baseTable, hdbMakeEntry)
@@ -41,7 +41,7 @@ import Language.Haskell.TH
    sigD, valD, varP, conE,
    tySynD,
    recC, varStrictType, isStrict, strictType,
-   recConE, -- appE, varE,
+   recConE,
    ppr, runQ)
 import qualified Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.PprLib as TH
@@ -115,11 +115,12 @@ defineFieldDefault name typeQ =
     name'   = map toLower name
 
 -- | Build the type of the table from the fields given.
-mkRelationType :: [(ConName, TH.TypeQ)] -> TH.TypeQ
-mkRelationType =  foldr (\(ConName n,e) exp' -> [t|RecCons $(conT n) (Expr $e) $exp'|]) [t|RecNil|]
+mkRelationNameType :: [(ConName, TH.TypeQ)] -> TH.TypeQ
+mkRelationNameType =  foldr (\(ConName n,e) rest -> [t|RecCons $(conT n) (Expr $e) $rest|]) [t|RecNil|]
 
-mkResultType :: [(ConName, TH.TypeQ)] -> TH.TypeQ
-mkResultType =  foldr (\(ConName n,e) exp' -> [t|RecCons $(conT n) $e $exp'|]) [t|RecNil|]
+mkRecordType :: [(ConName, TH.TypeQ)] -> TH.TypeQ
+mkRecordType flds = [t|Record $(typeList flds)|]
+  where typeList = foldr (\(ConName n,e) rest -> [t|RecCons $(conT n) $e $rest|]) [t|RecNil|]
 
 -- | Creates a type synonym for a table with the name given, using
 -- the list of fields given.
@@ -129,13 +130,13 @@ defineRelationType :: ConName               -- ^ Name of the type synonym.
                    -> TH.DecQ               -- ^ The type synonym declaration.
 defineRelationType (ConName typeName) fields = do
   -- Create the type synonmym representing for our table.
-  tySynD typeName [] $ mkRelationType fields
+  tySynD typeName [] $ mkRelationNameType fields
 
-defineResultType :: ConName
+defineRecordType :: ConName
                  -> [(ConName, TH.TypeQ)]
                  -> TH.DecQ
-defineResultType (ConName typeName) fields =
-  tySynD typeName [] $ mkResultType fields
+defineRecordType (ConName typeName) fields =
+  tySynD typeName [] $ mkRecordType fields
 
 tableColumns :: [ConName] -> TH.ExpQ
 tableColumns []             = TH.runIO . ioError . userError
@@ -178,7 +179,7 @@ defineTable :: VarName
 defineTable relExprName relTypeName sqlName fields resultTypeName = do
   let types = map snd fields
   rel    <- defineRelation relExprName relTypeName sqlName types
-  result <- defineResultType resultTypeName types
+  result <- defineRecordType resultTypeName types
   let defF :: ((VarName, String), (ConName, TH.TypeQ)) -> Q [Dec]
       defF ((var, name), (con, typ)) = defineField con var name typ
   flds <- fmap concat . mapM defF $ fields
@@ -193,26 +194,26 @@ defineTableDefault schema name fields =
   where
     relExpr = varCamelcaseName name
     relType = conCamelcaseName name
-    resultType = conCamelcaseName $ name ++ "_result"
+    resultType = conCamelcaseName $ name ++ "_record"
     sqlName = map toUpper schema ++ '.' : map toLower name
     fldsInfo = map
                (\ (n, t) -> ((varCamelcaseName n, n), (conCamelcaseName n, t)))
                fields
 
 
-defineRecordType :: ConName               -- ^ Name of the data type of table record type.
+defineHaskellRecordType :: ConName               -- ^ Name of the data type of table record type.
                  -> [(VarName, TH.TypeQ)] -- ^ List of fields in the table. Must be legal, properly cased record fields.
                  -> TH.DecQ               -- ^ The data type record declaration.
-defineRecordType (ConName typeName) fields = do
+defineHaskellRecordType (ConName typeName) fields = do
   dataD (cxt []) typeName [] [recC typeName (map fld fields)] []
   where
     fld (VarName n, tq) = varStrictType n (strictType isStrict tq)
 
-defineRecordInstance :: TH.TypeQ -- ^ table type.
+defineHaskellRecordInstance :: TH.TypeQ -- ^ table type.
                      -> ConName  -- ^ Name of the data type of table record type.
                      -> [(VarName, String)] -- ^ 
                      -> Q [Dec]
-defineRecordInstance tableType (ConName typeName) fields =
+defineHaskellRecordInstance tableType (ConName typeName) fields =
   [d| instance GetRec $tableType $(conT typeName) where
         getRec vfs _ _ stmt =
           return $(recConE typeName (recFields [| vfs |] [| stmt |] fields))
@@ -223,23 +224,23 @@ defineRecordInstance tableType (ConName typeName) fields =
       [| getValue $vfsE $stmtE $(litE . stringL $ f) |]
     recFields vfsE stmtE = map (fieldQ vfsE stmtE)
 
-defineRecord :: TH.TypeQ                        -- ^ table type.
+defineHaskellRecord :: TH.TypeQ                        -- ^ table type.
              -> ConName                         -- ^ Name of the data type of table record type.
              -> [(VarName, (String, TH.TypeQ))] -- ^ (fieldVarName, (fieldInSQL, fieldTypeInTable))
              -> Q [Dec]
-defineRecord tableType typeName fields = do
+defineHaskellRecord tableType typeName fields = do
   let defs = map (\ (n, (_, t)) -> (n, t)) fields
-  typ  <- defineRecordType typeName defs
+  typ  <- defineHaskellRecordType typeName defs
   let getter = map (\ (n, (s, _)) -> (n, s)) fields
-  inst <- defineRecordInstance tableType typeName getter
+  inst <- defineHaskellRecordInstance tableType typeName getter
   return $ typ:inst
 
-defineRecordDefault :: TH.TypeQ
+defineHaskellRecordDefault :: TH.TypeQ
                     -> String
                     -> [(String, TH.TypeQ)]
                     -> Q [Dec]
-defineRecordDefault tableType name fields =
-  defineRecord tableType recType fldsInfo
+defineHaskellRecordDefault tableType name fields =
+  defineHaskellRecord tableType recType fldsInfo
   where
     recType = conCamelcaseName name
     fldsInfo = map

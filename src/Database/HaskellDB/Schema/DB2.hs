@@ -21,7 +21,7 @@ import Database.HaskellDB.Sql.Default (defaultSqlGenerator)
 import Database.HaskellDB.Connect.HDBC.Simple (hdbcSession)
 
 import qualified Database.HaskellDB.HDBRec.TH as Base
-import Database.HaskellDB.HDBRec.SelectType (ResultSelect)
+import Database.HaskellDB.HDBRec.SelectType (RecordSelect)
 
 
 $(Base.defineTableDefault
@@ -120,10 +120,10 @@ mapFromSql =
             ("BLOB",      [t|String|]),
             ("CLOB",      [t|String|])]
 
-getType :: (ResultSelect Typename String r,
-            ResultSelect Colname  String r,
-            ResultSelect Nulls    String r)
-           => r -> (String, Q Type)
+getType :: (RecordSelect Typename String r,
+            RecordSelect Colname  String r,
+            RecordSelect Nulls    String r)
+           => Record r -> (String, Q Type)
 getType rec =
   (map toLower $ rec !. colname,
    mayNull $ mapFromSql Map.! (rec !. typename))
@@ -142,7 +142,7 @@ getColumns :: IConnection conn
            => IO conn
            -> String
            -> String
-           -> IO [Record ColumnsResult]
+           -> IO [ColumnsRecord]
 getColumns connAct scm tbl =
    hdbcSession defaultSqlGenerator connAct
    (\_conn -> (`query` columnsQuery scm tbl))
