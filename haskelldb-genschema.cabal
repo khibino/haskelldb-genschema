@@ -16,6 +16,7 @@ cabal-version:       >=1.8
 library
   exposed-modules:     Database.HaskellDB.HDBRec.TH
                        Database.HaskellDB.HDBRec.SelectType
+                       Database.HaskellDB.HDBRec.Class
                        Database.HaskellDB.Schema.DB2
   -- other-modules:       
   build-depends:         base <5
