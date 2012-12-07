@@ -9,6 +9,7 @@ module Database.HaskellDB.HDBRec.TH (
   defineFieldType,
   defineFieldExpr,
   defineField,
+  defineFieldDefault,
 
   defineRelationType,
   defineResultType,
@@ -103,6 +104,15 @@ defineField typeName attrName colName typeQ = do
   val <- defineFieldExpr attrName typeName typeQ
   return $ typ ++ val
 
+defineFieldDefault :: String
+                      -> TH.TypeQ
+                      -> Q [Dec]
+defineFieldDefault name typeQ =
+  defineField fldType fldExpr name' typeQ
+  where
+    fldExpr = varCamelcaseName name
+    fldType = conCamelcaseName name
+    name'   = map toLower name
 
 -- | Build the type of the table from the fields given.
 mkRelationType :: [(ConName, TH.TypeQ)] -> TH.TypeQ
