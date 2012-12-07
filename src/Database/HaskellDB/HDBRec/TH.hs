@@ -27,7 +27,7 @@ module Database.HaskellDB.HDBRec.TH (
   ) where
 
 import Data.Char (toUpper, toLower)
-import Database.HaskellDB (Attr, Expr, Rel, Record)
+import Database.HaskellDB (Attr, Expr, Record)
 import Database.HaskellDB.HDBRec (RecCons, RecNil, FieldTag(fieldName), (#))
 import Database.HaskellDB.Database (GetRec(getRec), getValue)
 import Database.HaskellDB.DBLayout (Table, mkAttr, baseTable, hdbMakeEntry)
